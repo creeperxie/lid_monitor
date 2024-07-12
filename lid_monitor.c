@@ -64,8 +64,28 @@ static void handle_events(struct libinput *li) {
     }
 }
 
+static void enumerate_devices(struct udev *udev) {
+    struct udev_enumerate *enumerate = udev_enumerate_new(udev);
+    udev_enumerate_add_match_subsystem(enumerate, "backlight");
+    udev_enumerate_scan_devices(enumerate);
+
+    struct udev_list_entry *devices = udev_enumerate_get_list_entry(enumerate);
+    struct udev_list_entry *udev_list_entry;
+    udev_list_entry_foreach(udev_list_entry, devices) {
+        struct udev_device *dev = udev_device_new_from_syspath(udev,
+            udev_list_entry_get_name(udev_list_entry));
+
+        printf("found device: %s\n", udev_device_get_syspath(dev));
+
+        udev_device_unref(dev);
+    }
+
+    udev_enumerate_unref(enumerate);
+}
+
 int main() {
     struct udev *udev = udev_new();
+    enumerate_devices(udev);
 
     struct libinput *li = libinput_udev_create_context(&interface, NULL, udev);
     libinput_udev_assign_seat(li, "seat0");
